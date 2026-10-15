@@ -1,0 +1,27 @@
+# Site Rich + Firebase
+
+## Arquivos
+- `index.html`: site principal; respostas do formulário são gravadas na coleção `answers` do Firestore.
+- `admin.html`: login por e-mail/senha, leitura privada das respostas e gerenciamento de mensagens/cartas na coleção `messages`.
+- `firestore.rules`: regras de segurança que precisam ser publicadas no Firestore.
+
+## Configuração obrigatória antes de publicar
+1. No Firebase Console, abra **Authentication → Sign-in method** e ative **E-mail/senha**.
+2. Em **Authentication → Settings → Authorized domains**, confira se o domínio do seu GitHub Pages (normalmente `SEU-USUARIO.github.io`) está autorizado. Depois, em **Authentication → Users**, crie o usuário administrador com seu e-mail e uma senha forte. Não existe cadastro público na área administrativa.
+3. Abra esse usuário e copie o **UID**.
+4. No arquivo `firestore.rules`, substitua `ADMIN_UID_AQUI` pelo UID real, sem remover as aspas.
+5. No Firebase Console, abra **Firestore Database → Regras**, cole o conteúdo de `firestore.rules` já atualizado e clique em **Publicar**. Alternativamente, use o Firebase CLI para publicar o arquivo.
+6. Confirme que o Firestore Database foi criado no projeto `site-rich-8c033`.
+7. Publique `index.html` e `admin.html` na mesma pasta do repositório GitHub Pages. Acesse a área privada em `https://SEU-USUARIO.github.io/SEU-REPOSITORIO/admin.html`.
+
+## Teste recomendado
+- Abra o site publicado, preencha algumas respostas e envie.
+- Entre em `admin.html` com o usuário administrador e confirme que as respostas aparecem.
+- Crie/edite uma mensagem para testar a coleção `messages`.
+
+## Segurança e limitações
+- A configuração Firebase Web é visível no navegador por design; as regras do Firestore controlam o acesso aos dados.
+- As respostas enviadas pelo formulário são públicas no sentido de que qualquer visitante pode criar um envio, mas somente o UID administrador pode ler/alterar/excluir respostas. Para combater spam em produção, considere ativar App Check e/ou implementar uma função de backend com controles de abuso.
+- A tela administrativa é protegida por Firebase Authentication e pelas regras do banco; esconder a página não é a segurança principal.
+- A área de mensagens já permite administrar conteúdo, mas ainda não altera automaticamente a carta estática existente na página principal. Essa integração pode ser adicionada numa próxima etapa, preservando o visual.
+- Não compartilhe senha da conta Google nem credenciais de conta de serviço.

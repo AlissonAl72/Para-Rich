@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#160609">
+    <title>Área privada · Site Rich</title>
+    <style>
+        :root {
+            --bg: #100709;
+            --panel: #1b0b10;
+            --wine: #681b2d;
+            --red: #b52c48;
+            --rose: #f0b9bd;
+            --cream: #fff0e8;
+            --muted: #c8a5a7;
+            --line: #54202c
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(ellipse at 80% 0%, #39101c 0, transparent 36%), var(--bg);
+            color: var(--cream);
+            font-family: Georgia, 'Times New Roman', serif;
+            line-height: 1.6;
+            padding: 28px 16px
+        }
+
+        .wrap {
+            max-width: 900px;
+            margin: auto
+        }
+
+        .panel {
+            background: linear-gradient(145deg, #241017, #16090d);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: clamp(18px, 4vw, 32px);
+            margin: 18px 0
+        }
+
+        .title {
+            text-align: center;
+            color: var(--rose);
+            font-weight: 400;
+            font-size: clamp(2rem, 6vw, 3rem)
+        }
+
+        label {
+            display: block;
+            color: var(--rose);
+            margin: 10px 0 5px
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            background: #100709;
+            border: 1px solid #693044;
+            border-radius: 10px;
+            color: var(--cream);
+            padding: 12px;
+            font: inherit
+        }
+
+        button,
+        .btn {
+            font: inherit;
+            cursor: pointer;
+            background: linear-gradient(135deg, #8b2038, #4c101f);
+            border: 1px solid #b94b61;
+            border-radius: 999px;
+            padding: 10px 18px;
+            color: #fff4ed;
+            margin: 8px 8px 0 0
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .item {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            overflow-wrap: anywhere
+        }
+
+        .item h3 {
+            color: var(--rose);
+            font-weight: 400;
+            margin-top: 0
+        }
+
+        .hidden {
+            display: none !important
+        }
+
+        .status {
+            white-space: pre-wrap;
+            color: var(--rose)
+        }
+
+        .answer {
+            padding: 8px 0;
+            border-bottom: 1px solid #54202c
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        .row>* {
+            flex: 1;
+            min-width: 220px
+        }
+
+        a {
+            color: var(--rose)
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <h1 class="title">Área privada ♡</h1>
+        <p class="muted" style="text-align:center">Um cantinho só seu para ler as respostas e cuidar das mensagens do
+            site.</p>
+        <section id="loginPanel" class="panel">
+            <h2>Entrar</h2>
+            <form id="loginForm"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username"
+                    required><label for="password">Senha</label><input id="password" type="password"
+                    autocomplete="current-password" required><button type="submit">Entrar ♡</button></form>
+            <p id="loginStatus" class="status" role="status"></p>
+        </section>
+        <div id="dashboard" class="hidden">
+            <section class="panel">
+                <div class="row" style="align-items:center">
+                    <div>
+                        <h2>Respostas do Rich</h2>
+                        <p class="muted">As respostas enviadas pelo formulário do site aparecem aqui.</p>
+                    </div>
+                    <div style="text-align:right"><button id="refreshAnswers">Atualizar</button><button
+                            id="logout">Sair</button></div>
+                </div>
+                <p id="answersStatus" class="status" role="status"></p>
+                <div id="answersList"></div>
+            </section>
+            <section class="panel">
+                <h2>Mensagens e cartas</h2>
+                <p class="muted">Você pode cadastrar mensagens para usar em futuras atualizações do site.</p>
+                <form id="messageForm"><input id="messageId" type="hidden"><label
+                        for="messageTitle">Título</label><input id="messageTitle" maxlength="100" required
+                        placeholder="Ex.: Uma mensagem para você"><label for="messageBody">Mensagem</label><textarea
+                        id="messageBody" rows="5" maxlength="5000" required
+                        placeholder="Escreva aqui..."></textarea><button type="submit">Salvar mensagem</button><button
+                        type="button" id="cancelEdit">Limpar formulário</button></form>
+                <p id="messagesStatus" class="status" role="status"></p>
+                <div id="messagesList"></div>
+            </section>
+        </div>
+        <p class="muted" style="text-align:center"><a href="./index.html">Voltar ao site ♡</a></p>
+    </main>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+        import { getFirestore, collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+        const firebaseConfig = { apiKey: 'AIzaSyCoMDZv2cax44QYIE7XCfETYbKWGmyVu4s', authDomain: 'site-rich-8c033.firebaseapp.com', projectId: 'site-rich-8c033', storageBucket: 'site-rich-8c033.firebasestorage.app', messagingSenderId: '1042122935168', appId: '1:1042122935168:web:c173303e309a50800f0f65' };
+        const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
+        const $ = id => document.getElementById(id); let currentUser = null;
+        function readableError(e) { if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') return 'E-mail ou senha incorretos.'; if (e.code === 'permission-denied' || e.code === 'firestore/permission-denied') return 'Acesso negado pelas regras do Firestore. Confira o UID de administrador em firestore.rules.'; return 'Não foi possível concluir. Confira a conexão e as configurações do Firebase. (' + (e.code || 'erro') + ')' }
+        $('loginForm').addEventListener('submit', async e => { e.preventDefault(); $('loginStatus').textContent = 'Entrando…'; try { await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value) } catch (err) { $('loginStatus').textContent = readableError(err) } });
+        onAuthStateChanged(auth, async user => { currentUser = user; $('loginPanel').classList.toggle('hidden', !!user); $('dashboard').classList.toggle('hidden', !user); if (user) { $('loginStatus').textContent = ''; await loadAnswers(); await loadMessages() } });
+        $('logout').addEventListener('click', () => signOut(auth)); $('refreshAnswers').addEventListener('click', loadAnswers);
+        async function loadAnswers() { if (!currentUser) return; $('answersStatus').textContent = 'Carregando…'; $('answersList').replaceChildren(); try { const snap = await getDocs(query(collection(db, 'answers'), orderBy('submittedAt', 'desc'))); if (snap.empty) { $('answersStatus').textContent = 'Ainda não há respostas salvas.'; return } $('answersStatus').textContent = `${snap.size} envio(s) recebido(s).`; snap.forEach(s => { const data = s.data(), card = document.createElement('article'); card.className = 'item'; const h = document.createElement('h3'); const date = data.submittedAt?.toDate?.(); h.textContent = date ? 'Recebido em ' + date.toLocaleString('pt-BR') : 'Resposta recebida'; card.append(h); (Array.isArray(data.answers) ? data.answers : []).forEach(a => { const line = document.createElement('div'); line.className = 'answer'; const b = document.createElement('strong'); b.textContent = (a.name || 'Resposta') + ': '; line.append(b, document.createTextNode(a.value || '')); card.append(line) }); $('answersList').append(card) }) } catch (e) { $('answersStatus').textContent = readableError(e) } }
+        async function loadMessages() { if (!currentUser) return; $('messagesStatus').textContent = 'Carregando…'; $('messagesList').replaceChildren(); try { const snap = await getDocs(query(collection(db, 'messages'), orderBy('updatedAt', 'desc'))); if (snap.empty) { $('messagesStatus').textContent = 'Nenhuma mensagem cadastrada ainda.'; return } $('messagesStatus').textContent = `${snap.size} mensagem(ns).`; snap.forEach(s => { const d = s.data(), card = document.createElement('article'); card.className = 'item'; const h = document.createElement('h3'); h.textContent = d.title || 'Sem título'; const p = document.createElement('p'); p.style.whiteSpace = 'pre-wrap'; p.textContent = d.body || ''; const edit = document.createElement('button'); edit.textContent = 'Editar'; edit.addEventListener('click', () => { $('messageId').value = s.id; $('messageTitle').value = d.title || ''; $('messageBody').value = d.body || ''; $('messageTitle').focus() }); const del = document.createElement('button'); del.textContent = 'Excluir'; del.addEventListener('click', async () => { if (!confirm('Excluir esta mensagem?')) return; try { await deleteDoc(doc(db, 'messages', s.id)); await loadMessages() } catch (e) { $('messagesStatus').textContent = readableError(e) } }); card.append(h, p, edit, del); $('messagesList').append(card) }) } catch (e) { $('messagesStatus').textContent = readableError(e) } }
+        $('messageForm').addEventListener('submit', async e => { e.preventDefault(); if (!currentUser) return; $('messagesStatus').textContent = 'Salvando…'; const data = { title: $('messageTitle').value.trim(), body: $('messageBody').value.trim(), updatedAt: serverTimestamp(), updatedBy: currentUser.uid }; try { const id = $('messageId').value; if (id) await updateDoc(doc(db, 'messages', id), data); else await addDoc(collection(db, 'messages'), { ...data, createdAt: serverTimestamp() }); $('messageForm').reset(); $('messageId').value = ''; await loadMessages(); $('messagesStatus').textContent = 'Mensagem salva. ♡' } catch (err) { $('messagesStatus').textContent = readableError(err) } });
+        $('cancelEdit').addEventListener('click', () => { $('messageForm').reset(); $('messageId').value = ''; $('messagesStatus').textContent = '' })
+    </script>
+</body>
+
+</html>

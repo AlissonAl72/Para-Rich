@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // TROQUE ADMIN_UID_AQUI pelo UID do usuário administrador criado no Firebase Authentication.
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == lffp8dlNqSZQ5Hfc3ZV4oIXt5fw2;
+    }
+
+    match /answers/{answerId} {
+      // Visitantes podem enviar respostas, mas não podem ler, alterar ou excluir envios.
+      allow create: if request.resource.data.keys().hasOnly(['answers', 'submittedAt', 'source'])
+        && request.resource.data.source == 'site-rich'
+        && request.resource.data.submittedAt == request.time
+        && request.resource.data.answers is list
+        && request.resource.data.answers.size() > 0
+        && request.resource.data.answers.size() <= 20;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /messages/{messageId} {
+      // O site poderá ler mensagens publicadas; somente o administrador pode editar.
+      allow read: if true;
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'body', 'updatedAt', 'updatedBy', 'createdAt'])
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 100
+        && request.resource.data.body is string && request.resource.data.body.size() <= 5000
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'body', 'updatedAt', 'updatedBy', 'createdAt'])
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 100
+        && request.resource.data.body is string && request.resource.data.body.size() <= 5000
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+  }
+}
